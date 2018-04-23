@@ -1,0 +1,4 @@
+package: github.com/nerdalize/docker-machine-driver-nerdalize
+import:
+  - package: github.com/docker/machine
+    version: v0.14.0
