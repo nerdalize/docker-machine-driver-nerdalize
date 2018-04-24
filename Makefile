@@ -3,7 +3,7 @@
 GITHUB_USER := atsaki
 VERSION := $(shell grep -w Version version.go | awk '{print $$5}' | sed 's/"//g')
 
-TARGET_OS ?= linux 
+TARGET_OS ?= linux
 TARGET_ARCH ?= amd64
 
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -35,8 +35,7 @@ build test release:
 		make $@
 else
 build:
-	GOGC=off gox -os "$(TARGET_OS)" -arch "$(TARGET_ARCH)" \
-	-output "dist/$(EXECUTABLE_NAME)_{{.OS}}_{{.Arch}}" ./bin
+	go build -o $(GOPATH)/bin/docker-machine-driver-nerdalize bin/main.go
 
 test:
 	exit 0
@@ -50,4 +49,3 @@ release: clean build
 		--replace \
 		$(VERSION) dist/
 endif
-
