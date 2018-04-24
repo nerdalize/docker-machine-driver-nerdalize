@@ -1,5 +1,5 @@
-hash: 324c9f5aefdf81c316a745608a51263a312359f60e560fb05e530e0fcd25522a
-updated: 2018-04-20T10:58:52.018354+02:00
+hash: 175ad490c340629d22886d2a1856ffc0921bd52da66a605a99fdf3fd76fa6112
+updated: 2018-04-23T11:15:56.668697501+02:00
 imports:
 - name: github.com/docker/docker
   version: a8a31eff10544860d2188dddabdee4d727545796
@@ -19,6 +19,10 @@ imports:
   - libmachine/state
   - libmachine/version
   - version
+- name: github.com/xanzy/go-cloudstack
+  version: 3934d17bfafbc810e8f60b3a8168ab9d9e7c2740
+  subpackages:
+  - cloudstack
 - name: golang.org/x/crypto
   version: 51714a8c4ac1764f07ab4127d7f739351ced4759
   subpackages:
