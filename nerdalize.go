@@ -148,7 +148,6 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 }
 
 func NewDriver(hostName, storePath string) drivers.Driver {
-	log.Infof("Store path = [%s]", storePath)
 	driver := &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
