@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	driverName = "cloudstack"
+	driverName = "nerdalize"
 	dockerPort = 2376
 	swarmPort  = 3376
 )
@@ -25,14 +26,14 @@ type configError struct {
 }
 
 func (e *configError) Error() string {
-	return fmt.Sprintf("cloudstack driver requires the --cloudstack-%s option", e.option)
+	return fmt.Sprintf("nerdalize driver requires the --nerdalize-%s option", e.option)
 }
 
 type Driver struct {
 	*drivers.BaseDriver
-	Id                   string
-	ApiURL               string
-	ApiKey               string
+	ID                   string
+	APIURL               string
+	APIKey               string
 	SecretKey            string
 	HTTPGETOnly          bool
 	JobTimeOut           int64
@@ -64,85 +65,75 @@ type Driver struct {
 func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{
 		mcnflag.StringFlag{
-			Name:   "cloudstack-api-url",
-			Usage:  "CloudStack API URL",
-			EnvVar: "CLOUDSTACK_API_URL",
+			Name:   "nerdalize-api-url",
+			Usage:  "Nerdalize API URL",
+			EnvVar: "NERDALIZE_API_URL",
 		},
 		mcnflag.StringFlag{
-			Name:   "cloudstack-api-key",
-			Usage:  "CloudStack API key",
-			EnvVar: "CLOUDSTACK_API_KEY",
+			Name:   "nerdalize-api-key",
+			Usage:  "Nerdalize API key",
+			EnvVar: "NERDALIZE_API_KEY",
 		},
 		mcnflag.StringFlag{
-			Name:   "cloudstack-secret-key",
-			Usage:  "CloudStack API secret key",
-			EnvVar: "CLOUDSTACK_SECRET_KEY",
-		},
-		mcnflag.StringFlag{
-			Name:   "cloudstack-ssh-key-path",
-			Usage:  "CloudStack ssh key path",
-			EnvVar: "CLOUDSTACK_SSH_KEY_PATH",
-		},
-		mcnflag.StringFlag{
-			Name:   "cloudstack-ssh-private-key",
-			Usage:  "CloudStack ssh private key",
-			EnvVar: "CLOUDSTACK_SSH_PRIVATE_KEY",
+			Name:   "nerdalize-secret-key",
+			Usage:  "Nerdalize API secret key",
+			EnvVar: "NERDALIZE_SECRET_KEY",
 		},
 		mcnflag.BoolFlag{
-			Name:   "cloudstack-http-get-only",
-			Usage:  "Only use HTTP GET to execute CloudStack API",
-			EnvVar: "CLOUDSTACK_HTTP_GET_ONLY",
+			Name:   "nerdalize-http-get-only",
+			Usage:  "Only use HTTP GET to execute Nerdalize API",
+			EnvVar: "NERDALIZE_HTTP_GET_ONLY",
 		},
 		mcnflag.IntFlag{
-			Name:   "cloudstack-timeout",
+			Name:   "nerdalize-timeout",
 			Usage:  "time(seconds) allowed to complete async job",
-			EnvVar: "CLOUDSTACK_TIMEOUT",
+			EnvVar: "NERDALIZE_TIMEOUT",
 			Value:  300,
 		},
 		mcnflag.BoolFlag{
-			Name:  "cloudstack-use-private-address",
+			Name:  "nerdalize-use-private-address",
 			Usage: "Use a private IP to access the machine",
 		},
 		mcnflag.BoolFlag{
-			Name:  "cloudstack-use-port-forward",
+			Name:  "nerdalize-use-port-forward",
 			Usage: "Use port forwarding rule to access the machine",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-public-ip",
-			Usage: "CloudStack Public IP",
+			Name:  "nerdalize-public-ip",
+			Usage: "Nerdalize Public IP",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-ssh-user",
-			Usage: "CloudStack SSH user",
+			Name:  "nerdalize-ssh-user",
+			Usage: "Nerdalize SSH user",
 			Value: "root",
 		},
 		mcnflag.StringSliceFlag{
-			Name:  "cloudstack-cidr",
+			Name:  "nerdalize-cidr",
 			Usage: "Source CIDR to give access to the machine. default 0.0.0.0/0",
 		},
 		mcnflag.BoolFlag{
-			Name:  "cloudstack-expunge",
+			Name:  "nerdalize-expunge",
 			Usage: "Whether or not to expunge the machine upon removal",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-template",
-			Usage: "CloudStack template",
+			Name:  "nerdalize-template",
+			Usage: "Nerdalize template",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-service-offering",
-			Usage: "CloudStack service offering",
+			Name:  "nerdalize-service-offering",
+			Usage: "Nerdalize service offering",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-network",
-			Usage: "CloudStack network",
+			Name:  "nerdalize-network",
+			Usage: "Nerdalize network",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-zone",
-			Usage: "CloudStack zone",
+			Name:  "nerdalize-zone",
+			Usage: "Nerdalize zone",
 		},
 		mcnflag.StringFlag{
-			Name:  "cloudstack-userdata-file",
-			Usage: "CloudStack Userdata file",
+			Name:  "nerdalize-userdata-file",
+			Usage: "Nerdalize Userdata file",
 		},
 	}
 }
@@ -177,36 +168,34 @@ func (d *Driver) GetSSHUsername() string {
 // SetConfigFromFlags configures the driver with the object that was returned
 // by RegisterCreateFlags
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
-	d.ApiURL = flags.String("cloudstack-api-url")
-	d.ApiKey = flags.String("cloudstack-api-key")
-	d.SecretKey = flags.String("cloudstack-secret-key")
-	d.SSHKeyPath = flags.String("cloudstack-ssh-key-path")
-	d.SSHPort = 22
+	d.APIURL = flags.String("nerdalize-api-url")
+	d.APIKey = flags.String("nerdalize-api-key")
+	d.SecretKey = flags.String("nerdalize-secret-key")
 	d.SSHUser = "nerdalize"
-	d.UsePrivateIP = flags.Bool("cloudstack-use-private-address")
-	d.UsePortForward = flags.Bool("cloudstack-use-port-forward")
-	d.HTTPGETOnly = flags.Bool("cloudstack-http-get-only")
-	d.JobTimeOut = int64(flags.Int("cloudstack-timeout"))
-	d.SSHUser = flags.String("cloudstack-ssh-user")
-	d.CIDRList = flags.StringSlice("cloudstack-cidr")
-	d.Expunge = flags.Bool("cloudstack-expunge")
+	d.UsePrivateIP = flags.Bool("nerdalize-use-private-address")
+	d.UsePortForward = flags.Bool("nerdalize-use-port-forward")
+	d.HTTPGETOnly = flags.Bool("nerdalize-http-get-only")
+	d.JobTimeOut = int64(flags.Int("nerdalize-timeout"))
+	d.SSHUser = flags.String("nerdalize-ssh-user")
+	d.CIDRList = flags.StringSlice("nerdalize-cidr")
+	d.Expunge = flags.Bool("nerdalize-expunge")
 
-	if err := d.setZone(flags.String("cloudstack-zone")); err != nil {
+	if err := d.setZone(flags.String("nerdalize-zone")); err != nil {
 		return err
 	}
-	if err := d.setTemplate(flags.String("cloudstack-template")); err != nil {
+	if err := d.setTemplate(flags.String("nerdalize-template")); err != nil {
 		return err
 	}
-	if err := d.setServiceOffering(flags.String("cloudstack-service-offering")); err != nil {
+	if err := d.setServiceOffering(flags.String("nerdalize-service-offering")); err != nil {
 		return err
 	}
-	if err := d.setNetwork(flags.String("cloudstack-network")); err != nil {
+	if err := d.setNetwork(flags.String("nerdalize-network")); err != nil {
 		return err
 	}
-	if err := d.setPublicIP(flags.String("cloudstack-public-ip")); err != nil {
+	if err := d.setPublicIP(flags.String("nerdalize-public-ip")); err != nil {
 		return err
 	}
-	if err := d.setUserData(flags.String("cloudstack-userdata-file")); err != nil {
+	if err := d.setUserData(flags.String("nerdalize-userdata-file")); err != nil {
 		return err
 	}
 
@@ -215,11 +204,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 	d.SSHKeyPair = d.MachineName
 
-	if d.ApiURL == "" {
+	if d.APIURL == "" {
 		return &configError{option: "api-url"}
 	}
 
-	if d.ApiKey == "" {
+	if d.APIKey == "" {
 		return &configError{option: "api-key"}
 	}
 
@@ -269,7 +258,7 @@ func (d *Driver) GetIP() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	cs := d.getClient()
-	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(d.Id)
+	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(d.ID)
 	if err != nil {
 		return state.Error, err
 	}
@@ -307,15 +296,16 @@ func (d *Driver) GetState() (state.State, error) {
 // PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
 func (d *Driver) PreCreateCheck() error {
 
-	// if err := d.checkKeyPair(); err != nil {
-	// 	return err
-	// }
+	if err := d.checkKeyPair(); err != nil {
+		return err
+	}
 
 	return d.checkInstance()
 }
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
+	os.Setenv("MACHINE_DEBUG", "1")
 	cs := d.getClient()
 
 	if err := d.createKeyPair(); err != nil {
@@ -326,7 +316,7 @@ func (d *Driver) Create() error {
 		d.ServiceOfferingID, d.TemplateID, d.ZoneID)
 	p.SetName(d.MachineName)
 	p.SetDisplayname(d.MachineName)
-	// p.SetKeypair(d.SSHKeyPair)
+	p.SetKeypair(d.SSHKeyPair)
 
 	if d.UserData != "" {
 		p.SetUserdata(d.UserData)
@@ -344,13 +334,13 @@ func (d *Driver) Create() error {
 	}
 
 	// Create the machine
-	log.Info("Creating CloudStack instance...")
+	log.Info("Creating Nerdalize instance...")
 	vm, err := cs.VirtualMachine.DeployVirtualMachine(p)
 	if err != nil {
 		return err
 	}
 
-	d.Id = vm.Id
+	d.ID = vm.Id
 
 	d.PrivateIP = vm.Nic[0].Ipaddress
 	if d.NetworkType == "Basic" {
@@ -379,13 +369,18 @@ func (d *Driver) Create() error {
 		}
 	}
 
+	ip, err := d.GetIP()
+	if err != nil {
+		return err
+	}
+	d.IPAddress = ip
 	return nil
 }
 
 // Remove a host
 func (d *Driver) Remove() error {
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewDestroyVirtualMachineParams(d.Id)
+	p := cs.VirtualMachine.NewDestroyVirtualMachineParams(d.ID)
 	p.SetExpunge(d.Expunge)
 
 	if err := d.deleteFirewallRules(); err != nil {
@@ -396,7 +391,7 @@ func (d *Driver) Remove() error {
 		return err
 	}
 
-	log.Info("Removing CloudStack instance...")
+	log.Info("Removing Nerdalize instance...")
 	if _, err := cs.VirtualMachine.DestroyVirtualMachine(p); err != nil {
 		return err
 	}
@@ -431,7 +426,7 @@ func (d *Driver) Start() error {
 	}
 
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewStartVirtualMachineParams(d.Id)
+	p := cs.VirtualMachine.NewStartVirtualMachineParams(d.ID)
 
 	if _, err = cs.VirtualMachine.StartVirtualMachine(p); err != nil {
 		return err
@@ -453,7 +448,7 @@ func (d *Driver) Stop() error {
 	}
 
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewStopVirtualMachineParams(d.Id)
+	p := cs.VirtualMachine.NewStopVirtualMachineParams(d.ID)
 
 	if _, err = cs.VirtualMachine.StopVirtualMachine(p); err != nil {
 		return err
@@ -474,7 +469,7 @@ func (d *Driver) Restart() error {
 	}
 
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewRebootVirtualMachineParams(d.Id)
+	p := cs.VirtualMachine.NewRebootVirtualMachineParams(d.ID)
 
 	if _, err = cs.VirtualMachine.RebootVirtualMachine(p); err != nil {
 		return err
@@ -489,7 +484,7 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) getClient() *cloudstack.CloudStackClient {
-	cs := cloudstack.NewAsyncClient(d.ApiURL, d.ApiKey, d.SecretKey, false)
+	cs := cloudstack.NewAsyncClient(d.APIURL, d.APIKey, d.SecretKey, false)
 	cs.HTTPGETOnly = d.HTTPGETOnly
 	cs.AsyncTimeout(d.JobTimeOut)
 	return cs
@@ -747,7 +742,7 @@ func (d *Driver) disassociatePublicIP() error {
 func (d *Driver) enableStaticNat() error {
 	cs := d.getClient()
 	log.Infof("Enabling Static Nat...")
-	p := cs.NAT.NewEnableStaticNatParams(d.PublicIPID, d.Id)
+	p := cs.NAT.NewEnableStaticNatParams(d.PublicIPID, d.ID)
 	if _, err := cs.NAT.EnableStaticNat(p); err != nil {
 		return err
 	}
@@ -782,7 +777,7 @@ func (d *Driver) configurePortForwardingRule(publicPort, privatePort int) error 
 
 	log.Debugf("Creating port forwarding rule ... : cidr list: %v, port %d", d.CIDRList, publicPort)
 	p := cs.Firewall.NewCreatePortForwardingRuleParams(
-		d.PublicIPID, privatePort, "tcp", publicPort, d.Id)
+		d.PublicIPID, privatePort, "tcp", publicPort, d.ID)
 	p.SetOpenfirewall(false)
 	if _, err := cs.Firewall.CreatePortForwardingRule(p); err != nil {
 		return err

@@ -35,7 +35,7 @@ build test release:
 		make $@
 else
 build:
-	go build -o $(GOPATH)/bin/docker-machine-driver-nerdalize bin/main.go
+	GOGC=off gox -os "$(TARGET_OS)" -arch "$(TARGET_ARCH)" 	-output "dist/$(EXECUTABLE_NAME)_{{.OS}}_{{.Arch}}" ./bin
 
 test:
 	exit 0
