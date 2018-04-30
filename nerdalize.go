@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -31,9 +30,9 @@ func (e *configError) Error() string {
 
 type Driver struct {
 	*drivers.BaseDriver
-	ID                   string
-	APIURL               string
-	APIKey               string
+	Id                   string
+	ApiURL               string
+	ApiKey               string
 	SecretKey            string
 	HTTPGETOnly          bool
 	JobTimeOut           int64
@@ -105,7 +104,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 		mcnflag.StringFlag{
 			Name:  "nerdalize-ssh-user",
 			Usage: "Nerdalize SSH user",
-			Value: "root",
+			Value: "nerdalize",
 		},
 		mcnflag.StringSliceFlag{
 			Name:  "nerdalize-cidr",
@@ -139,6 +138,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 }
 
 func NewDriver(hostName, storePath string) drivers.Driver {
+
 	driver := &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
@@ -168,10 +168,9 @@ func (d *Driver) GetSSHUsername() string {
 // SetConfigFromFlags configures the driver with the object that was returned
 // by RegisterCreateFlags
 func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
-	d.APIURL = flags.String("nerdalize-api-url")
-	d.APIKey = flags.String("nerdalize-api-key")
+	d.ApiURL = flags.String("nerdalize-api-url")
+	d.ApiKey = flags.String("nerdalize-api-key")
 	d.SecretKey = flags.String("nerdalize-secret-key")
-	d.SSHUser = "nerdalize"
 	d.UsePrivateIP = flags.Bool("nerdalize-use-private-address")
 	d.UsePortForward = flags.Bool("nerdalize-use-port-forward")
 	d.HTTPGETOnly = flags.Bool("nerdalize-http-get-only")
@@ -204,11 +203,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 
 	d.SSHKeyPair = d.MachineName
 
-	if d.APIURL == "" {
+	if d.ApiURL == "" {
 		return &configError{option: "api-url"}
 	}
 
-	if d.APIKey == "" {
+	if d.ApiKey == "" {
 		return &configError{option: "api-key"}
 	}
 
@@ -258,7 +257,7 @@ func (d *Driver) GetIP() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	cs := d.getClient()
-	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(d.ID)
+	vm, count, err := cs.VirtualMachine.GetVirtualMachineByID(d.Id)
 	if err != nil {
 		return state.Error, err
 	}
@@ -300,12 +299,15 @@ func (d *Driver) PreCreateCheck() error {
 		return err
 	}
 
-	return d.checkInstance()
+	if err := d.checkInstance(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	os.Setenv("MACHINE_DEBUG", "1")
 	cs := d.getClient()
 
 	if err := d.createKeyPair(); err != nil {
@@ -340,7 +342,7 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	d.ID = vm.Id
+	d.Id = vm.Id
 
 	d.PrivateIP = vm.Nic[0].Ipaddress
 	if d.NetworkType == "Basic" {
@@ -374,13 +376,14 @@ func (d *Driver) Create() error {
 		return err
 	}
 	d.IPAddress = ip
+
 	return nil
 }
 
 // Remove a host
 func (d *Driver) Remove() error {
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewDestroyVirtualMachineParams(d.ID)
+	p := cs.VirtualMachine.NewDestroyVirtualMachineParams(d.Id)
 	p.SetExpunge(d.Expunge)
 
 	if err := d.deleteFirewallRules(); err != nil {
@@ -426,7 +429,7 @@ func (d *Driver) Start() error {
 	}
 
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewStartVirtualMachineParams(d.ID)
+	p := cs.VirtualMachine.NewStartVirtualMachineParams(d.Id)
 
 	if _, err = cs.VirtualMachine.StartVirtualMachine(p); err != nil {
 		return err
@@ -448,7 +451,7 @@ func (d *Driver) Stop() error {
 	}
 
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewStopVirtualMachineParams(d.ID)
+	p := cs.VirtualMachine.NewStopVirtualMachineParams(d.Id)
 
 	if _, err = cs.VirtualMachine.StopVirtualMachine(p); err != nil {
 		return err
@@ -469,7 +472,7 @@ func (d *Driver) Restart() error {
 	}
 
 	cs := d.getClient()
-	p := cs.VirtualMachine.NewRebootVirtualMachineParams(d.ID)
+	p := cs.VirtualMachine.NewRebootVirtualMachineParams(d.Id)
 
 	if _, err = cs.VirtualMachine.RebootVirtualMachine(p); err != nil {
 		return err
@@ -484,7 +487,7 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) getClient() *cloudstack.CloudStackClient {
-	cs := cloudstack.NewAsyncClient(d.APIURL, d.APIKey, d.SecretKey, false)
+	cs := cloudstack.NewAsyncClient(d.ApiURL, d.ApiKey, d.SecretKey, false)
 	cs.HTTPGETOnly = d.HTTPGETOnly
 	cs.AsyncTimeout(d.JobTimeOut)
 	return cs
@@ -742,7 +745,7 @@ func (d *Driver) disassociatePublicIP() error {
 func (d *Driver) enableStaticNat() error {
 	cs := d.getClient()
 	log.Infof("Enabling Static Nat...")
-	p := cs.NAT.NewEnableStaticNatParams(d.PublicIPID, d.ID)
+	p := cs.NAT.NewEnableStaticNatParams(d.PublicIPID, d.Id)
 	if _, err := cs.NAT.EnableStaticNat(p); err != nil {
 		return err
 	}
@@ -777,7 +780,7 @@ func (d *Driver) configurePortForwardingRule(publicPort, privatePort int) error 
 
 	log.Debugf("Creating port forwarding rule ... : cidr list: %v, port %d", d.CIDRList, publicPort)
 	p := cs.Firewall.NewCreatePortForwardingRuleParams(
-		d.PublicIPID, privatePort, "tcp", publicPort, d.ID)
+		d.PublicIPID, privatePort, "tcp", publicPort, d.Id)
 	p.SetOpenfirewall(false)
 	if _, err := cs.Firewall.CreatePortForwardingRule(p); err != nil {
 		return err
