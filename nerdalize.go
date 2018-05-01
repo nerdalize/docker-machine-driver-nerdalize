@@ -15,9 +15,23 @@ import (
 )
 
 const (
-	driverName = "nerdalize"
-	dockerPort = 2376
-	swarmPort  = 3376
+	driverName                = "nerdalize"
+	dockerPort                = 2376
+	swarmPort                 = 3376
+	kubernetesApiServerPort   = 6443
+	etcdApiPortStart          = 2379
+	etcdApiPortEnd            = 2380
+	kubeletApiPort            = 10250
+	kubeSchedulerPort         = 10251
+	kubeControllerManagerPort = 10252
+	kubeletApiReadOnlyPort    = 10255
+	nodeServicesPortStart     = 30000
+	nodeServicesPortEnd       = 32767
+	flannelPort1              = 8285
+	flannelPort2              = 8472
+	calicoPort                = 179
+	ingressPortHttp           = 80
+	ingressPortHttps          = 443
 )
 
 type configError struct {
@@ -880,6 +894,35 @@ func (d *Driver) createSecurityGroup() error {
 			return err
 		}
 	}
+
+	kubernetesPorts := []struct {
+		start int
+		end int
+		protocol string
+	}{
+		{kubernetesApiServerPort, kubernetesApiServerPort, "tcp"},
+		{etcdApiPortStart, etcdApiPortEnd, "tcp"},
+		{kubeletApiPort, kubeletApiPort, "tcp"},
+		{kubeSchedulerPort, kubeSchedulerPort, "tcp"},
+		{kubeControllerManagerPort, kubeControllerManagerPort, "tcp"},
+		{kubeletApiReadOnlyPort, kubeletApiReadOnlyPort, "tcp"},
+		{nodeServicesPortStart, nodeServicesPortEnd, "tcp"},
+		{flannelPort1, flannelPort1, "udp"},
+		{flannelPort2, flannelPort2, "udp"},
+		{calicoPort, calicoPort, "tcp"},
+		{ingressPortHttp, ingressPortHttp, "tcp"},
+		{ingressPortHttps, ingressPortHttps, "tcp"},
+	}
+
+	for _, kubePort := range kubernetesPorts {
+		p2.SetStartport(kubePort.start)
+		p2.SetEndport(kubePort.end)
+		p2.SetProtocol(kubePort.protocol)
+		if _, err := cs.SecurityGroup.AuthorizeSecurityGroupIngress(p2); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
