@@ -1,10 +1,15 @@
-hash: 324c9f5aefdf81c316a745608a51263a312359f60e560fb05e530e0fcd25522a
-updated: 2018-04-20T10:58:52.018354+02:00
+hash: 175ad490c340629d22886d2a1856ffc0921bd52da66a605a99fdf3fd76fa6112
+updated: 2018-04-30T15:21:47.972876971+02:00
 imports:
+- name: github.com/Azure/go-ansiterm
+  version: d6e3b3328b783f23731bc4d058875b0371ff8109
+  subpackages:
+  - winterm
 - name: github.com/docker/docker
-  version: a8a31eff10544860d2188dddabdee4d727545796
+  version: d4e48af48d1a2d7427ccd9f950cf6bc6ff5682b6
   subpackages:
   - pkg/term
+  - pkg/term/windows
 - name: github.com/docker/machine
   version: 89b833253d9412716a0291cbdccc94454c33d1b5
   subpackages:
@@ -19,8 +24,14 @@ imports:
   - libmachine/state
   - libmachine/version
   - version
+- name: github.com/sirupsen/logrus
+  version: f006c2ac4710855cf0f916dd6b77acf6b048dc6e
+- name: github.com/xanzy/go-cloudstack
+  version: 3934d17bfafbc810e8f60b3a8168ab9d9e7c2740
+  subpackages:
+  - cloudstack
 - name: golang.org/x/crypto
-  version: 51714a8c4ac1764f07ab4127d7f739351ced4759
+  version: 6bd909f163c83732e0b5e22a27154b1a112c3ff9
   subpackages:
   - curve25519
   - ed25519
@@ -28,7 +39,8 @@ imports:
   - ssh
   - ssh/terminal
 - name: golang.org/x/sys
-  version: d9157a9621b69ad1d8d77a1933590c416593f24f
+  version: 7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce
   subpackages:
   - unix
+  - windows
 testImports: []
