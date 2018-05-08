@@ -1,12 +1,12 @@
 hash: 175ad490c340629d22886d2a1856ffc0921bd52da66a605a99fdf3fd76fa6112
-updated: 2018-04-30T15:21:47.972876971+02:00
+updated: 2018-05-08T12:47:58.345649631+02:00
 imports:
 - name: github.com/Azure/go-ansiterm
   version: d6e3b3328b783f23731bc4d058875b0371ff8109
   subpackages:
   - winterm
 - name: github.com/docker/docker
-  version: d4e48af48d1a2d7427ccd9f950cf6bc6ff5682b6
+  version: 17b039cb4901fc0a37c409ebfdf4f3b2fcec4409
   subpackages:
   - pkg/term
   - pkg/term/windows
